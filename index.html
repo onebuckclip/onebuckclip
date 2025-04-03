@@ -27,6 +27,9 @@
             display: none;
         }
     </style>
+    <!-- **reCAPTCHA v3 скрипт - ВСТАВЬТЕ ЭТО СЮДА** -->
+    <script src="https://www.google.com/recaptcha/api.js?render=6LcwSAkrAAAAAGp34QyiI87GW4eZo1-C5ZESexmg"></script>
+
 </head>
 <body class="bg-gray-100 font-sans">
     <div class="container mx-auto px-4 py-10">
@@ -66,68 +69,71 @@
         </div>
     </div>
 
-    <script>
-        document.getElementById('orderForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Предотвращаем стандартную отправку формы
+<script>
+    document.getElementById('orderForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Предотвращаем стандартную отправку формы
 
-            const fileLink = document.getElementById('fileLink').value;
-            const crypto = document.getElementById('crypto').value;
-            const email = document.getElementById('email').value;
-            const websiteUrl = document.getElementById('website-url').value; // Получаем значение honeypot поля
-            const formMessage = document.getElementById('formMessage');
+        const fileLink = document.getElementById('fileLink').value;
+        const crypto = document.getElementById('crypto').value;
+        const email = document.getElementById('email').value;
+        const websiteUrl = document.getElementById('website-url').value; // Honeypot поле
+        const formMessage = document.getElementById('formMessage');
 
-            if (websiteUrl) { // Проверка honeypot - если поле заполнено, это бот
-                console.warn('Honeypot triggered. Bot submission likely.');
-                formMessage.textContent = 'Произошла ошибка. Пожалуйста, попробуйте позже.'; // Общее сообщение для пользователя
-                formMessage.className = 'text-red-500 text-center mt-4';
-                return; // Прерываем отправку формы
-            }
+        if (websiteUrl) { // Honeypot проверка на клиенте
+            console.warn('Honeypot triggered. Bot submission likely.');
+            formMessage.textContent = 'Произошла ошибка. Пожалуйста, попробуйте позже.';
+            formMessage.className = 'text-red-500 text-center mt-4';
+            return;
+        }
 
+        if (!fileLink || !crypto || !email) {
+            formMessage.textContent = 'Пожалуйста, заполните все поля.';
+            formMessage.className = 'text-red-500 text-center mt-4';
+            return;
+        }
 
-            if (!fileLink || !crypto || !email) {
-                formMessage.textContent = 'Пожалуйста, заполните все поля.';
-                formMessage.className = 'text-red-500 text-center mt-4';
-                return;
-            }
+        formMessage.textContent = 'Отправка заказа...';
+        formMessage.className = 'text-blue-500 text-center mt-4';
 
-            formMessage.textContent = 'Отправка заказа...';
-            formMessage.className = 'text-blue-500 text-center mt-4';
+        // **Получение reCAPTCHA токена перед отправкой AJAX**
+        grecaptcha.ready(function() {
+            grecaptcha.execute('YOUR_RECAPTCHA_SITE_KEY', {action: 'submit_order'}).then(function(token) {
+                // **Теперь, когда токен получен, отправляем форму с AJAX**
+                const formData = {
+                    fileLink: fileLink,
+                    crypto: crypto,
+                    email: email,
+                    websiteUrl: websiteUrl,
+                    recaptchaToken: token // **Добавляем reCAPTCHA токен к данным формы**
+                };
 
-            const formData = {
-                fileLink: fileLink,
-                crypto: crypto,
-                email: email,
-                websiteUrl: websiteUrl // Включаем honeypot поле в данные для отправки (для серверной проверки)
-            };
-
-            // !!! ВНИМАНИЕ !!!
-            // Здесь нужно заменить '/.netlify/functions/submit-order' на URL вашей серверной функции
-            // или API endpoint для отправки данных.
-            fetch('/.netlify/functions/submit-order', { // Пример для Netlify Functions
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    formMessage.textContent = 'Заказ успешно отправлен! Проверьте вашу почту.';
-                    formMessage.className = 'text-green-500 text-center mt-4';
-                    document.getElementById('orderForm').reset(); // Очистка формы после успешной отправки
-                } else {
+                fetch('/.netlify/functions/submit-order', { // URL вашей Netlify функции
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        formMessage.textContent = 'Заказ успешно отправлен! Проверьте вашу почту.';
+                        formMessage.className = 'text-green-500 text-center mt-4';
+                        document.getElementById('orderForm').reset();
+                    } else {
+                        formMessage.textContent = 'Ошибка отправки заказа. Пожалуйста, попробуйте позже.';
+                        formMessage.className = 'text-red-500 text-center mt-4';
+                        console.error('Ошибка отправки:', data.error);
+                    }
+                })
+                .catch(error => {
                     formMessage.textContent = 'Ошибка отправки заказа. Пожалуйста, попробуйте позже.';
                     formMessage.className = 'text-red-500 text-center mt-4';
-                    console.error('Ошибка отправки:', data.error);
-                }
-            })
-            .catch(error => {
-                formMessage.textContent = 'Ошибка отправки заказа. Пожалуйста, попробуйте позже.';
-                formMessage.className = 'text-red-500 text-center mt-4';
-                console.error('Ошибка сети:', error);
+                    console.error('Ошибка сети:', error);
+                });
             });
         });
-    </script>
+    });
+</script>
 </body>
 </html>
