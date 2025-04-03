@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "submit-order.js",
   "dependencies": {
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.0"
   },
   "scripts": {
