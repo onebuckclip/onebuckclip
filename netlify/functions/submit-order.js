@@ -74,7 +74,7 @@ Email клиента: ${email}`
 
         // Email подтверждение клиенту
         const clientMailOptions = {
-            from: `Лендинг заказов firstlesson@tutanota.com`, // !!! Замените на ваш Gmail !!!
+            from: `Лендинг заказов <firstlesson@tutanota.com>`, // !!! Замените на ваш Gmail !!!
             to: userEmail,
             subject: 'Ваш заказ принят',
             text: `Спасибо за заказ! Ваши данные:
