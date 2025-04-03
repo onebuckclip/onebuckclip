@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const fetch = require('node-fetch'); // Импорт node-fetch
+const fetch = require('node-fetch');
 
 exports.handler = async function(event, context) {
     if (event.httpMethod !== 'POST') {
@@ -7,21 +7,25 @@ exports.handler = async function(event, context) {
     }
 
     const data = JSON.parse(event.body);
-    const { fileLink, crypto, email, websiteUrl, recaptchaToken } = data; // Получаем recaptchaToken
+    const { fileLink, crypto, email, websiteUrl, recaptchaToken } = data;
 
-    // **Honeypot проверка на сервере (дополнительно к клиентской)**
+    // **Honeypot проверка на сервере**
     if (websiteUrl) {
         console.warn('Server-side honeypot triggered. Bot submission likely.');
-        return { statusCode: 400, body: JSON.stringify({ success: false, error: 'Invalid request' }) }; // Возвращаем ошибку
+        return { statusCode: 400, body: JSON.stringify({ success: false, error: 'Invalid request' }) };
     }
 
     // **Валидация обязательных полей на сервере**
     if (!fileLink || !crypto || !email) {
-        return { statusCode: 400, body: JSON.stringify({ success: false, error: 'Please fill in all fields' }) }; // Возвращаем ошибку валидации
+        return { statusCode: 400, body: JSON.stringify({ success: false, error: 'Please fill in all fields' }) };
     }
 
     // **reCAPTCHA Server-side Verification**
-    const recaptchaSecretKey = process.env.RECAPTCHA_SECRET_KEY; // Получаем Secret key из переменных окружения
+    const recaptchaSecretKey = process.env.RECAPTCHA_SECRET_KEY;
+    if (!recaptchaSecretKey) {
+        console.error('RECAPTCHA_SECRET_KEY environment variable is not set!');
+        return { statusCode: 500, body: JSON.stringify({ success: false, error: 'Server configuration error' }) };
+    }
     const recaptchaVerifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaSecretKey}&response=${recaptchaToken}`;
 
     try {
@@ -30,30 +34,54 @@ exports.handler = async function(event, context) {
 
         if (!recaptchaData.success) {
             console.warn('reCAPTCHA verification failed:', recaptchaData);
-            return { statusCode: 400, body: JSON.stringify({ success: false, error: 'reCAPTCHA verification failed' }) }; // Возвращаем ошибку reCAPTCHA
+            return { statusCode: 400, body: JSON.stringify({ success: false, error: 'reCAPTCHA verification failed' }) };
         }
 
-        // **Дополнительная проверка score (опционально, для reCAPTCHA v3)**
-        // const recaptchaScoreThreshold = 0.5; // Например, порог 0.5
+        // **Дополнительная проверка score (опционально)**
+        // const recaptchaScoreThreshold = 0.5;
         // if (recaptchaData.score < recaptchaScoreThreshold) {
         //     console.warn('reCAPTCHA score too low:', recaptchaData.score);
         //     return { statusCode: 400, body: JSON.stringify({ success: false, error: 'reCAPTCHA score too low' }) };
         // }
 
-
         // **Если reCAPTCHA прошла успешно, продолжаем отправку email**
-        const ownerEmail = 'firstlesson@tutanota.com'; // Замените на email владельца
+        const ownerEmail = 'firstlesson@tutanota.com'; // !!! Замените на emasl владельца !!!
         const userEmail = email;
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'bacunin.ma@google.com', // Замените на ваш Gmail
+                user: 'bacunin.ma@gmail.com', // !!! Замените на ваш Gmail !!!
                 pass: process.env.GMAIL_APP_PASSWORD // Используем App Password из переменной окружения
             }
         });
 
-        // ... (код отправки email владельцу и клиенту - без изменений) ...
+        if (!process.env.GMAIL_APP_PASSWORD) {
+            console.error('GMAIL_APP_PASSWORD environment variable is not set!');
+            return { statusCode: 500, body: JSON.stringify({ success: false, error: 'Server configuration error' }) };
+        }
+
+        // Email владельцу сайта
+        const ownerMailOptions = {
+            from: `Лендинг заказов <firstlesson@tutanota.com>`, // !!! Замените на ваш Gmail !!!
+            to: ownerEmail,
+            subject: 'Новый заказ с лендинга',
+            text: `Время заказа: ${new Date().toLocaleString()}
+Ссылка на файлы: ${fileLink}
+Выбранная криптовалюта: ${crypto}
+Email клиента: ${email}`
+        };
+
+        // Email подтверждение клиенту
+        const clientMailOptions = {
+            from: `Лендинг заказов firstlesson@tutanota.com`, // !!! Замените на ваш Gmail !!!
+            to: userEmail,
+            subject: 'Ваш заказ принят',
+            text: `Спасибо за заказ! Ваши данные:
+- Ссылка на файлы: ${fileLink}
+- Время принятия заказа: ${new Date().toLocaleString()}
+Мы свяжемся с вами в ближайшее время.`
+        };
 
         await transporter.sendMail(ownerMailOptions);
         await transporter.sendMail(clientMailOptions);
