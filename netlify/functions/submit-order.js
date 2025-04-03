@@ -63,7 +63,7 @@ exports.handler = async function(event, context) {
 
         // Email владельцу сайта
         const ownerMailOptions = {
-            from: `Лендинг заказов <firstlesson@tutanota.com>`, // !!! Замените на ваш Gmail !!!
+            from: `Лендинг заказов <bacunin.ma@gmail.com>`, // !!! Замените на ваш Gmail !!!
             to: ownerEmail,
             subject: 'Новый заказ с лендинга',
             text: `Время заказа: ${new Date().toLocaleString()}
@@ -74,7 +74,7 @@ Email клиента: ${email}`
 
         // Email подтверждение клиенту
         const clientMailOptions = {
-            from: `Лендинг заказов <firstlesson@tutanota.com>`, // !!! Замените на ваш Gmail !!!
+            from: `Лендинг заказов <bacunin.ma@gmail.com>`, // !!! Замените на ваш Gmail !!!
             to: userEmail,
             subject: 'Ваш заказ принят',
             text: `Спасибо за заказ! Ваши данные:
