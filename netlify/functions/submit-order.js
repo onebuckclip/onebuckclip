@@ -42,13 +42,13 @@ exports.handler = async function(event, context) {
 
 
         // **Если reCAPTCHA прошла успешно, продолжаем отправку email**
-        const ownerEmail = 'your-owner-email@example.com'; // Замените на email владельца
+        const ownerEmail = 'firstlesson@tutanota.com'; // Замените на email владельца
         const userEmail = email;
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'your-gmail-email@gmail.com', // Замените на ваш Gmail
+                user: 'bacunin.ma@google.com', // Замените на ваш Gmail
                 pass: process.env.GMAIL_APP_PASSWORD // Используем App Password из переменной окружения
             }
         });
